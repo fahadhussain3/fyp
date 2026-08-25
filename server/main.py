@@ -107,15 +107,16 @@ async def upload_and_parse_gazette(
         records = []
         current_time = datetime.now(timezone.utc).isoformat()
 
-        for page_num in range(1, total_pages + 1):
+        def process_page(page_num):
             text = get_page_text(temp_file_path, page_num)
             if not text.strip():
-                continue
-
+                return []
+            
+            page_records = []
             for match in compiled_re.findall(text):
                 if normalized_board == "Lahore":
                     roll_no, name, marks = match
-                    records.append({
+                    page_records.append({
                         "roll_number": int(roll_no),
                         "name": name.strip(),
                         "marks": int(marks),
@@ -127,7 +128,7 @@ async def upload_and_parse_gazette(
                     })
                 else:
                     roll_no, marks = match
-                    records.append({
+                    page_records.append({
                         "roll_number": int(roll_no),
                         "name": None,
                         "marks": int(marks),
@@ -137,9 +138,19 @@ async def upload_and_parse_gazette(
                         "year": int(year),
                         "created_at": current_time,
                     })
+            return page_records
 
-            if page_num % 200 == 0:
-                print(f"Processed {page_num}/{total_pages} pages... ({len(records)} records extracted)")
+        import concurrent.futures
+        
+        processed_pages = 0
+        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+            future_to_page = {executor.submit(process_page, p): p for p in range(1, total_pages + 1)}
+            for future in concurrent.futures.as_completed(future_to_page):
+                page_records = future.result()
+                records.extend(page_records)
+                processed_pages += 1
+                if processed_pages % 200 == 0:
+                    print(f"Processed {processed_pages}/{total_pages} pages... ({len(records)} records extracted)")
 
         print(f"[*] Uploading {len(records)} records to Supabase...")
 
