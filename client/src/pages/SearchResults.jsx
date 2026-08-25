@@ -15,6 +15,8 @@ export default function SearchResults() {
   const [year, setYear] = useState('');
   const [classNum, setClassNum] = useState('');
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
   const fetchResults = async (page = 1) => {
     setLoading(true);
 
@@ -29,7 +31,7 @@ export default function SearchResults() {
     if (classNum) params.append("class_num", classNum);
 
     try {
-      const res = await fetch(`http://localhost:8000/api/results?${params.toString()}`);
+      const res = await fetch(`${API_BASE_URL}/api/results?${params.toString()}`);
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.detail || "Failed to fetch results");

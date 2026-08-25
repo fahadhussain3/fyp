@@ -15,6 +15,8 @@ export default function UploadGazette() {
   const [statusMsg, setStatusMsg] = useState("");
   const [isError, setIsError] = useState(false);
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!file) return alert("Please select a PDF file first.");
@@ -37,7 +39,7 @@ export default function UploadGazette() {
     formData.append("selected_fields", JSON.stringify(selectedFields));
 
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "http://localhost:8000/api/upload-and-parse");
+    xhr.open("POST", `${API_BASE_URL}/api/upload-and-parse`);
 
     // Track upload progress
     xhr.upload.onprogress = (event) => {
