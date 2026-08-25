@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
 
 const PAGE_SIZE = 25;
 
@@ -15,35 +16,34 @@ export default function SearchResults() {
   const [year, setYear] = useState('');
   const [classNum, setClassNum] = useState('');
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-
   const fetchResults = async (page = 1) => {
     setLoading(true);
 
-    const params = new URLSearchParams();
-    params.append("page", page);
-    params.append("page_size", PAGE_SIZE);
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
 
-    if (rollNumber.trim()) params.append("roll_number", rollNumber.trim());
-    if (name.trim()) params.append("name", name.trim());
-    if (board.trim()) params.append("board", board.trim());
-    if (year) params.append("year", year);
-    if (classNum) params.append("class_num", classNum);
+    let query = supabase
+      .from('student_results')
+      .select('*', { count: 'exact' })
+      .range(from, to)
+      .order('roll_number', { ascending: true });
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/results?${params.toString()}`);
-      const data = await res.json();
+    if (rollNumber.trim()) query = query.eq('roll_number', parseInt(rollNumber.trim(), 10));
+    if (name.trim()) query = query.ilike('name', `%${name.trim()}%`);
+    if (board.trim()) query = query.ilike('board', `%${board.trim()}%`);
+    if (year) query = query.eq('year', parseInt(year, 10));
+    if (classNum) query = query.eq('class', parseInt(classNum, 10));
 
-      if (!res.ok) throw new Error(data.detail || "Failed to fetch results");
+    const { data, count, error } = await query;
 
-      setResults(data.data || []);
-      setTotalCount(data.total_count || 0);
-      setCurrentPage(data.page || 1);
-    } catch (err) {
-      alert("Error fetching records: " + err.message);
-    } finally {
-      setLoading(false);
+    if (error) {
+      alert("Error fetching records: " + error.message);
+    } else {
+      setResults(data || []);
+      setTotalCount(count || 0);
+      setCurrentPage(page);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -116,7 +116,7 @@ export default function SearchResults() {
 
       {/* Results View */}
       {loading ? (
-        <p>Loading records from server...</p>
+        <p>Loading records from database...</p>
       ) : (
         <>
           <div className="count-label">
@@ -139,7 +139,7 @@ export default function SearchResults() {
               {results.length === 0 ? (
                 <tr>
                   <td colSpan="7" style={{ textAlign: 'center', padding: '24px' }}>
-                    No records match your criteria.
+                    No records found.
                   </td>
                 </tr>
               ) : (

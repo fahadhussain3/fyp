@@ -33,10 +33,14 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # If Poppler is in your PATH, leave these as "pdfinfo" / "pdftotext".
 # If not, set the exact path, e.g.: r"C:\poppler\Library\bin\pdfinfo.exe"
 # -------------------------------------------------------------
-POPPLER_BIN_DIR = r"C:\poppler\poppler-26.02.0\Library\bin"  # Update this if your folder is different
+POPPLER_BIN_DIR = r"C:\poppler\poppler-26.02.0\Library\bin"
 
-PDFINFO_BIN = os.path.join(POPPLER_BIN_DIR, "pdfinfo.exe") if os.path.exists(POPPLER_BIN_DIR) else "pdfinfo"
-PDFTOTEXT_BIN = os.path.join(POPPLER_BIN_DIR, "pdftotext.exe") if os.path.exists(POPPLER_BIN_DIR) else "pdftotext"
+PDFINFO_BIN = "pdfinfo" if shutil.which("pdfinfo") else (
+    os.path.join(POPPLER_BIN_DIR, "pdfinfo.exe") if os.path.exists(POPPLER_BIN_DIR) else "pdfinfo"
+)
+PDFTOTEXT_BIN = "pdftotext" if shutil.which("pdftotext") else (
+    os.path.join(POPPLER_BIN_DIR, "pdftotext.exe") if os.path.exists(POPPLER_BIN_DIR) else "pdftotext"
+)
 
 BOARD_PATTERNS = {
     "Lahore": {
